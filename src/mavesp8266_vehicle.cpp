@@ -126,8 +126,10 @@ MavESP8266Vehicle::readMessageRaw() {
             buf_index++;
         }
     }
-
-    _forwardTo->sendMessageRaw((uint8_t*)buf, buf_index);
+    if(buf_index)
+    {
+      _forwardTo->sendMessageRaw((uint8_t*)buf, buf_index);
+    }
 }
 
 //---------------------------------------------------------------------------------

@@ -187,8 +187,10 @@ MavESP8266GCS::readMessageRaw() {
             // reboot command, switch out of raw mode soon
             getWorld()->getComponent()->resetRawMode();
         }
-
-        _forwardTo->sendMessageRaw((uint8_t*)buf, buf_index);
+        if(buf_index)
+        {
+          _forwardTo->sendMessageRaw((uint8_t*)buf, buf_index);
+        }
     }
 }
 

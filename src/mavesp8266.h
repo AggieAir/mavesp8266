@@ -55,7 +55,7 @@ class MavESP8266Component;
 class MavESP8266Vehicle;
 class MavESP8266GCS;
 
-#define DEFAULT_UART_SPEED          921600
+#define DEFAULT_UART_SPEED          57600
 #define DEFAULT_WIFI_CHANNEL        11
 #define DEFAULT_UDP_HPORT           14550
 #define DEFAULT_UDP_CPORT           14555
@@ -64,7 +64,7 @@ class MavESP8266GCS;
 
 //-- TODO: This needs to come from the build system
 #define MAVESP8266_VERSION_MAJOR    1
-#define MAVESP8266_VERSION_MINOR    2
+#define MAVESP8266_VERSION_MINOR    3
 #define MAVESP8266_VERSION_BUILD    2
 #define MAVESP8266_VERSION          ((MAVESP8266_VERSION_MAJOR << 24) & 0xFF00000) | ((MAVESP8266_VERSION_MINOR << 16) & 0x00FF0000) | (MAVESP8266_VERSION_BUILD & 0xFFFF)
 

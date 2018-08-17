@@ -44,7 +44,14 @@
 
 #include <ESP8266mDNS.h>
 
-#define GPIO02  2
+#ifdef ENABLE_DEBUG
+//#define GPIO02  2 // used for serial debug
+#define LEDGPIO 14		// just use any pin to avoid killing debug
+#else
+#define LEDGPIO 2		// used for serial debug, disable when using debug
+#endif
+
+#define RESETGPIO 12
 
 //---------------------------------------------------------------------------------
 //-- HTTP Update Status
@@ -105,6 +112,7 @@ MavESP8266World* getWorld()
 //---------------------------------------------------------------------------------
 //-- Wait for a DHCPD client
 void wait_for_client() {
+		bool LEDState = 1;
     DEBUG_LOG("Waiting for a client...\n");
 #ifdef ENABLE_DEBUG
     int wcount = 0;
@@ -119,14 +127,19 @@ void wait_for_client() {
         }
 #endif
         delay(1000);
+      	LEDState = !LEDState;
+      	digitalWrite(LEDGPIO,LEDState);
         client_count = wifi_softap_get_station_num();
     }
     DEBUG_LOG("Got %d client(s)\n", client_count);
+  	LEDState = 0;
+  	digitalWrite(LEDGPIO,LEDState);
 }
 
 //---------------------------------------------------------------------------------
 //-- Reset all parameters whenever the reset gpio pin is active
 void reset_interrupt(){
+	// TODO wait for a second before accepting request
     Parameters.resetToDefaults();
     Parameters.saveAllToEeprom();
     ESP.reset();
@@ -135,17 +148,21 @@ void reset_interrupt(){
 //---------------------------------------------------------------------------------
 //-- Set things up
 void setup() {
+  	bool LEDState;
     delay(1000);
     Parameters.begin();
 #ifdef ENABLE_DEBUG
     //   We only use it for non debug because GPIO02 is used as a serial
     //   pin (TX) when debugging.
     Serial1.begin(115200);
-#else
-    //-- Initialized GPIO02 (Used for "Reset To Factory")
-    pinMode(GPIO02, INPUT_PULLUP);
-    attachInterrupt(GPIO02, reset_interrupt, FALLING);
 #endif
+    pinMode(LEDGPIO, OUTPUT);
+    LEDState = 1;
+    digitalWrite(LEDGPIO,LEDState);
+    //-- Initialized RESETGPIO (Used for "Reset To Factory")
+    pinMode(RESETGPIO, INPUT_PULLUP);
+    attachInterrupt(RESETGPIO, reset_interrupt, FALLING);
+
     Logger.begin(2048);
 
     DEBUG_LOG("\nConfiguring access point...\n");
@@ -165,12 +182,18 @@ void setup() {
             Serial.print(".");
             #endif
             delay(500);
+            LEDState = !LEDState;
+            digitalWrite(LEDGPIO,LEDState);
         }
         if(WiFi.status() == WL_CONNECTED) {
             localIP = WiFi.localIP();
+            LEDState = 0;
+            digitalWrite(LEDGPIO,LEDState);
             WiFi.setAutoReconnect(true);
         } else {
             //-- Fall back to AP mode if no connection could be established
+          	LEDState = 1;
+          	digitalWrite(LEDGPIO,LEDState);
             WiFi.disconnect(true);
             Parameters.setWifiMode(WIFI_MODE_AP);
         }
@@ -210,7 +233,7 @@ void setup() {
 //-- Main Loop
 void loop() {
     if(!updateStatus.isUpdating()) {
-        if (Component.inRawMode()) {
+        if (1){//Component.inRawMode()) {
             GCS.readMessageRaw();
             delay(0);
             Vehicle.readMessageRaw();
