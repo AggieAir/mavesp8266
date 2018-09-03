@@ -45,7 +45,7 @@ public:
     MavESP8266GCS();
 
     void    begin                   (MavESP8266Bridge* forwardTo, IPAddress gcsIP);
-    void    readMessage             ();
+    bool    readMessage             ();
     void    readMessageRaw          ();
     int     sendMessage             (mavlink_message_t* message, int count);
     int     sendMessage             (mavlink_message_t* message);
@@ -64,6 +64,7 @@ private:
     uint16_t            _udp_port;
     mavlink_message_t   _message;
     unsigned long       _last_status_time;
+    bool DHCPOff;
 };
 
 #endif

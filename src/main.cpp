@@ -35,6 +35,8 @@
  * @author Gus Grubba <mavlink@grubba.com>
  */
 
+#include <SoftwareSerial.h>
+SoftwareSerial swSer(14, 16, false, 256);
 #include "mavesp8266.h"
 #include "mavesp8266_parameters.h"
 #include "mavesp8266_gcs.h"
@@ -90,6 +92,7 @@ MavESP8266Vehicle       Vehicle;
 MavESP8266Httpd         updateServer;
 MavESP8266UpdateImp     updateStatus;
 MavESP8266Log           Logger;
+MavESP8266Log           SoftLogger;
 
 //---------------------------------------------------------------------------------
 //-- Accessors
@@ -100,6 +103,7 @@ public:
     MavESP8266Vehicle*      getVehicle      () { return &Vehicle;       }
     MavESP8266GCS*          getGCS          () { return &GCS;           }
     MavESP8266Log*          getLogger       () { return &Logger;        }
+    MavESP8266Log*          getSoftLogger       () { return &SoftLogger;        }
 };
 
 MavESP8266WorldImp      World;
@@ -151,6 +155,13 @@ void setup() {
   	bool LEDState;
     delay(1000);
     Parameters.begin();
+
+#ifdef ENABLE_SOFTDEBUG
+    // software serial on unrelated pin/s for usb/serial/debug
+    swSer.begin(57600);
+#endif
+
+
 #ifdef ENABLE_DEBUG
     //   We only use it for non debug because GPIO02 is used as a serial
     //   pin (TX) when debugging.
@@ -232,16 +243,30 @@ void setup() {
 //---------------------------------------------------------------------------------
 //-- Main Loop
 void loop() {
+	static bool udp_rx = false;
+	static bool LedState;
+	static unsigned long tick=0;
     if(!updateStatus.isUpdating()) {
-        if (1){//Component.inRawMode()) {
+        if (udp_rx){//Component.inRawMode()) {
             GCS.readMessageRaw();
             delay(0);
             Vehicle.readMessageRaw();
-
+            if((millis()-tick)> 100)
+            {
+            	digitalWrite(LEDGPIO,LedState);
+            	LedState = !LedState;
+            	tick = millis();
+            }
         } else {
-            GCS.readMessage();
+        	  udp_rx =GCS.readMessage();
             delay(0);
             Vehicle.readMessage();
+            if((millis()-tick)> 4000)
+            {
+            	digitalWrite(LEDGPIO,LedState);
+            	LedState = !LedState;
+            	tick = millis();
+            }
         }
     }
     updateServer.checkUpdates();

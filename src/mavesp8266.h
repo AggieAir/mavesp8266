@@ -70,11 +70,17 @@ class MavESP8266GCS;
 
 //-- Debug sent out to Serial1 (GPIO02), which is TX only (no RX).
 //#define ENABLE_DEBUG
+//  Debug sent out to softserial configured to use GPIO14 and GPIO16
+#define ENABLE_SOFTDEBUG true
 
 #ifdef ENABLE_DEBUG
 #define DEBUG_LOG(format, ...) do { getWorld()->getLogger()->log(format, ## __VA_ARGS__); } while(0)
 #else
+#ifdef ENABLE_SOFTDEBUG
+#define DEBUG_LOG(format, ...) do { getWorld()->getSoftLogger()->log(format, ## __VA_ARGS__); } while(0)
+#else
 #define DEBUG_LOG(format, ...) do { } while(0)
+#endif
 #endif
 
 //---------------------------------------------------------------------------------
@@ -94,7 +100,7 @@ public:
     MavESP8266Bridge();
     virtual ~MavESP8266Bridge(){;}
     virtual void    begin           (MavESP8266Bridge* forwardTo);
-    virtual void    readMessage     () = 0;
+    virtual bool    readMessage     () = 0;
     virtual void    readMessageRaw  () = 0;
     virtual int     sendMessage     (mavlink_message_t* message, int count) = 0;
     virtual int     sendMessage     (mavlink_message_t* message) = 0;
@@ -149,6 +155,7 @@ public:
     virtual MavESP8266Vehicle*      getVehicle      () = 0;
     virtual MavESP8266GCS*          getGCS          () = 0;
     virtual MavESP8266Log*          getLogger       () = 0;
+    virtual MavESP8266Log*          getSoftLogger       () = 0;
 };
 
 //---------------------------------------------------------------------------------

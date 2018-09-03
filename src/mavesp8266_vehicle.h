@@ -50,7 +50,7 @@ public:
     MavESP8266Vehicle();
 
     void    begin           (MavESP8266Bridge* forwardTo);
-    void    readMessage     ();
+    bool    readMessage     ();
     void    readMessageRaw  ();
     int     sendMessage     (mavlink_message_t* message, int count);
     int     sendMessage     (mavlink_message_t* message);

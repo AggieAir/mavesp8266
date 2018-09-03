@@ -71,7 +71,7 @@ MavESP8266Vehicle::begin(MavESP8266Bridge* forwardTo)
 
 //---------------------------------------------------------------------------------
 //-- Read MavLink message from UAS
-void
+bool
 MavESP8266Vehicle::readMessage()
 {
     if(_queue_count < UAS_QUEUE_SIZE) {
@@ -80,8 +80,18 @@ MavESP8266Vehicle::readMessage()
         }
     }
     //-- Do we have a message to send and is it time to forward data?
-    if(_queue_count && (_queue_count >= UAS_QUEUE_THRESHOLD || (millis() - _queue_time) > UAS_QUEUE_TIMEOUT)) {
+    if(_queue_count && (_queue_count >= 1)){//UAS_QUEUE_THRESHOLD || (millis() - _queue_time) > UAS_QUEUE_TIMEOUT)) {
+#if 1
+      char buf[300];
+      unsigned len = mavlink_msg_to_send_buffer((uint8_t*)buf, _message);
+      _forwardTo->sendMessageRaw((uint8_t *)buf, len);
+      DEBUG_LOG("%d,",len);
+
+#else
         int sent = _forwardTo->sendMessage(_message, _queue_count);
+#endif
+        _queue_count = 0;
+#if 0
         //-- Sent it all?
         if(sent == _queue_count) {
             memset(_message, 0, sizeof(_message));
@@ -96,6 +106,8 @@ MavESP8266Vehicle::readMessage()
             }
             _queue_count = left;
         }
+#endif
+#if 0
         //-- Maintain buffer status
         float cur_status  = 0.0;
         float buffer_size = (float)UAS_QUEUE_THRESHOLD;
@@ -103,18 +115,69 @@ MavESP8266Vehicle::readMessage()
         if(buffer_left > 0.0)
             cur_status = ((buffer_left / buffer_size) * 100.0f);
         _buffer_status = (_buffer_status * 0.05f) + (cur_status * 0.95);
+#endif
     }
+#if 0
     //-- Update radio status (1Hz)
     if(_heard_from && (millis() - _last_status_time > 1000)) {
         delay(0);
         _sendRadioStatus();
         _last_status_time = millis();
     }
+#endif
+    return(true);
 }
 
 void
 MavESP8266Vehicle::readMessageRaw() {
-    char buf[1024];
+#if 1
+#define QUEUE_SIZE 1024	// q size
+#define QUEUE_THRESHOLD 80	// send if this many bytes in q
+#define QUEUE_TIMEOUT 200	// send if this much time expired since last send
+#define BREAK_TIMEOUT 2 	// send if this much time expired since last character received
+	static unsigned long lastMilli =0;
+	static uint8_t Rawbuf[QUEUE_SIZE];
+  static int buf_index = 0;
+	while(Serial.available() && buf_index < QUEUE_SIZE) {
+			int result = Serial.read();
+      if(result >= 0)
+      {
+      	Rawbuf[buf_index++]=result;
+      	lastMilli = millis();	// record last time a character was read
+      }
+  }
+
+	if(buf_index)	// if any characters to send
+	{
+		  if(((millis()-lastMilli) > BREAK_TIMEOUT )||  // if no characters for the break time, must be packet send it
+		  	 ( buf_index >= QUEUE_THRESHOLD        )//||  // if too many characters in buffer , send it
+		  	 )//((millis()-_queue_time)> QUEUE_TIMEOUT)  ) // if long time since last send, send it
+			{
+		  	int sent = _forwardTo->sendMessageRaw((uint8_t*)Rawbuf,(buf_index<QUEUE_THRESHOLD)?(buf_index):(QUEUE_THRESHOLD));
+				//_queue_time  = millis();
+	      DEBUG_LOG("%d,",sent);
+				//buf_index = 0;
+#if 1
+				//-- Sent it all?
+				if(sent == buf_index) {
+						memset(Rawbuf, 0, sizeof(Rawbuf));
+						buf_index = 0;
+						_queue_time  = millis();
+				//-- Sent at least some?
+				} else if(sent) {
+						//-- Move the pending ones up the queue
+						int left = buf_index - sent;
+						for(int i = 0; i < left; i++) {
+							Rawbuf[i] = Rawbuf[sent+i];
+						}
+						buf_index = left;
+				}
+#endif
+			}
+  }
+
+#else
+	char buf[1024];
     int buf_index = 0;
 
     while(Serial.available() && buf_index < 300)
@@ -130,6 +193,7 @@ MavESP8266Vehicle::readMessageRaw() {
     {
       _forwardTo->sendMessageRaw((uint8_t*)buf, buf_index);
     }
+#endif
 }
 
 //---------------------------------------------------------------------------------

@@ -47,6 +47,7 @@ MavESP8266GCS::MavESP8266GCS()
     _recv_chan = MAVLINK_COMM_1;
     _send_chan = MAVLINK_COMM_0;
     memset(&_message, 0, sizeof(_message));
+    DHCPOff = false;
 }
 
 //---------------------------------------------------------------------------------
@@ -64,7 +65,7 @@ MavESP8266GCS::begin(MavESP8266Bridge* forwardTo, IPAddress gcsIP)
 
 //---------------------------------------------------------------------------------
 //-- Read MavLink message from GCS
-void
+bool
 MavESP8266GCS::readMessage()
 {
     //-- Read UDP
@@ -79,6 +80,7 @@ MavESP8266GCS::readMessage()
         _sendRadioStatus();
         _last_status_time = millis();
     }
+   return(DHCPOff);
 }
 
 
@@ -115,6 +117,7 @@ MavESP8266GCS::_readMessage()
                             //-- We no longer need DHCP
                             if(getWorld()->getParameters()->getWifiMode() == WIFI_MODE_AP) {
                                 wifi_softap_dhcps_stop();
+                                DHCPOff = true;
                             }
                             _heard_from      = true;
                             _system_id       = _message.sysid;
@@ -182,14 +185,17 @@ MavESP8266GCS::readMessageRaw() {
                 buf_index++;
             }
         }
-
+#if 0
         if (buf[0] == 0x30 && buf[1] == 0x20) {
             // reboot command, switch out of raw mode soon
             getWorld()->getComponent()->resetRawMode();
         }
+#endif
         if(buf_index)
         {
+          if(_ip[3] == 255) {_ip = _udp.remoteIP();}
           _forwardTo->sendMessageRaw((uint8_t*)buf, buf_index);
+
         }
     }
 }
@@ -234,9 +240,24 @@ MavESP8266GCS::sendMessage(mavlink_message_t* message) {
 
 int
 MavESP8266GCS::sendMessageRaw(uint8_t *buffer, int len) {
+#if 1
+		// Send it
+		_udp.beginPacket(_ip, _udp_port);
+		size_t sent = _udp.write(buffer, len);
+		_udp.endPacket();
+		//-- Feeble attempt at not losing data until we get access to the socket TX buffer
+		//   status before we try to send.
+		if(sent != (unsigned)len) {
+				delay(1);
+				_udp.beginPacket(_ip, _udp_port);
+				_udp.write(&buffer[sent], len - sent);
+				_udp.endPacket();
+		}
+#else
     _udp.beginPacket(_ip, _udp_port);
     size_t sent = _udp.write(buffer, len);
     _udp.endPacket();
+#endif
     //_udp.flush();
     return sent;
 }
