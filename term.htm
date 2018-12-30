@@ -1,0 +1,20 @@
+<html><head>
+<script>
+var c = new WebSocket('ws://'+location.hostname+':81/', ['arduino']);
+c.onopen = function () {  
+    c.send('Connect ' + new Date()); 
+}; 
+c.onerror = function (error) {    
+    console.log('WebSocket Error ', error);
+};
+c.onmessage = function (e) {  
+    console.log('Server: ', e.data); 
+    var l = document.getElementById('logs');
+    l.insertAdjacentHTML('afterend', e.data + '</br>');
+};
+</script>
+</head>
+<body>
+<div id='logs'></div> 
+</body>
+</html>

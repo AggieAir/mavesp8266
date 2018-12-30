@@ -44,11 +44,25 @@
 #include <ESP8266WebServer.h>
 #include <FS.h> // spiffs support
 
+//run 'platformio lib install WebSockets' if you don't have this
+// warning, uses up a bunch of ram we dont have and crashes stuff.
+//#include <WebSocketsServer.h>
+//#include <WebSockets.h>
+
 #include <ESP8266mDNS.h>
 #include <ESP8266HTTPUpdateServer.h>
 
 #include <SoftwareSerial.h>
 extern SoftwareSerial swSer;
+
+//#include <pgmspace.h>
+
+//#define PROGMEM   ICACHE_RODATA_ATTR
+
+//#define FPSTR(pstr_pointer) (reinterpret_cast<const __FlashStringHelper *>(pstr_pointer))
+
+//#define F(string_literal) (FPSTR(PSTR(string_literal)))
+
 
 const char PROGMEM kTEXTPLAIN[]  = "text/plain";
 const char PROGMEM kTEXTHTML[]   = "text/html";
@@ -100,8 +114,12 @@ ESP8266WebServer    webServer(80);
 MavESP8266Update*   updateCB    = NULL;
 bool                started     = false;
 
+//#define PSTR(s) (__extension__({static const char __c[] PROGMEM = (s); &__c[0];}))
+
 
 ESP8266HTTPUpdateServer httpUpdater;
+
+//WebSocketsServer webSocket = WebSocketsServer(81);
 
 
 //holds the current upload, if there is one, except OTA binary uploads, done elsewhere.
@@ -996,6 +1014,32 @@ MavESP8266Httpd::MavESP8266Httpd()
 //---------------------------------------------------------------------------------
 //-- Initialize
 
+/*
+void ICACHE_RAM_ATTR log(String entry) {
+  Serial.println(entry);
+  webSocket.broadcastTXT(String(millis()) + " " + entry);
+  delay(10);
+}
+
+void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
+
+  switch (type) {
+    case WStype_DISCONNECTED:
+      log(num + " Disconnected!");
+      break;
+    case WStype_CONNECTED: {
+        IPAddress ip = webSocket.remoteIP(num);
+        //   Serial.println(String(num) + " Connected from " + String(ip));
+        log("[DEBUG] Client connected.");
+      }
+      break;
+    default:
+      return;
+  }
+
+}
+*/
+
 
 void
 MavESP8266Httpd::begin(MavESP8266Update* updateCB_)
@@ -1076,6 +1120,10 @@ MavESP8266Httpd::begin(MavESP8266Update* updateCB_)
 
     webServer.begin();
 
+    // see https://github.com/Links2004/arduinoWebSockets/blob/master/examples/esp8266/WebSocketServer/WebSocketServer.ino for more.
+   // webSocket.begin();
+   // webSocket.onEvent(webSocketEvent);
+
     //MDNS.addService("http", "tcp", 80);
     //DBG_OUTPUT_PORT.printf("HTTPUpdateServer ready! Open http://%s.local/update in your browser\n", webupdatehost);
 }
@@ -1086,4 +1134,5 @@ void
 MavESP8266Httpd::checkUpdates()
 {
     webServer.handleClient();
+  //  webSocket.loop();
 }
