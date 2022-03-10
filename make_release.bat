@@ -12,9 +12,9 @@ platformio run -t buildfs
 
 @REM copy the target binaries to a releasable name:
 copy .pio\build\esp12e\spiffs.bin .
-rename spiffs.bin RFDTxMod-%VERSION%.4m.spiffs.bin
+rename spiffs.bin RFDTxMod-v1_spiffs%VERSION%.bin
 copy .pio\build\esp12e\firmware.bin .
-rename firmware.bin RFDTxMod-%VERSION%.4m.bin
+rename firmware.bin RFDTxMod_v1-%VERSION%.bin
 
 echo ------------------------------------------------------------------
 @REM show user:
