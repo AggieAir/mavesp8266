@@ -125,10 +125,10 @@ MavESP8266GCS::_readMessage()
                 if(msgReceived) {
                     //-- We no longer need to broadcast
                     _status.packets_received++;
-                    if(_ip[3] == 255) {
-                        _ip = _udp.remoteIP();
+                    /*if(_ip[3] == 255) {
+			_ip = _udp.remoteIP();
                         getWorld()->getLogger()->log("Response from GCS. Setting GCS IP to: %s\n", _ip.toString().c_str());
-                    }
+                    }*/
                     //-- First packets
                     if(!_heard_from) {
                         if(_message.msgid == MAVLINK_MSG_ID_HEARTBEAT) {
