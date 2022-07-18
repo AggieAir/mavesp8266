@@ -818,6 +818,11 @@ void r900x_setup(bool reflash) { // if true. it will attempt to reflash ( and fa
                     case 750: r9x_sensitivity = 126; break; // -89dBm
                     default: r9x_sensitivity = 94; break; // Defaults to -105dBm seen on 64kpbs datarates
                 }
+		
+		//### AGGIEAIR added this portion ###
+		r9x_sensitivity += 26;
+		//###
+
                 as_found = true;
                 debug_serial_println("AS found:"+String(airspeed));
                 break;
