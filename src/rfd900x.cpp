@@ -737,16 +737,14 @@ int r900x_getparams(String filename, bool factory_reset_first) {
 // Converts the RSSI figure incomming from a MAV message ID 109
 // to a figure that represents link quality in percentage
 uint8_t r900x_rssi_percentage(uint8_t mav_rssi_109) {
-    uint16_t res;
-    
-    if (mav_rssi_109 == 255) // MAV value that corresponsds to invalid/unknown
-    {
+    uint16_t res = mav_rssi_109;
+    res -= 80;
+    if(res > 126){
         res = 0;
-    } else if (mav_rssi_109 >= r9x_sensitivity + 20) {
-        res = 99;
-    } else {
-        res = 100 * (mav_rssi_109 - r9x_sensitivity);
-        res /= 20;
+    }
+    else{
+        res *= 99;
+        res /= 126;
     }
 
     //debug_serial_println("rssi_reported:" + String(mav_rssi_109));
@@ -819,9 +817,6 @@ void r900x_setup(bool reflash) { // if true. it will attempt to reflash ( and fa
                     default: r9x_sensitivity = 94; break; // Defaults to -105dBm seen on 64kpbs datarates
                 }
 		
-		//### AGGIEAIR added this portion ###
-		r9x_sensitivity += 26;
-		//###
 
                 as_found = true;
                 debug_serial_println("AS found:"+String(airspeed));
